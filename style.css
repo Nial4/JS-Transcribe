@@ -1,0 +1,195 @@
+/* 基本的なページスタイル */
+body {
+    margin: 0;
+    font-family: 'Roboto Mono', monospace;
+    background: #ffffff;
+    color: #000000;
+    overflow-x: hidden;
+}
+
+/* ページコンテナのレイアウト */
+.page-container {
+    min-height: 100vh;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start; /* コンテンツを左寄せに配置 */
+}
+
+/* メインコンテナのスタイル */
+.container {
+    max-width: 1200px;
+    width: 95%; /* 幅を調整して左寄せ */
+}
+
+/* タイトルのスタイル */
+.title {
+    color: #000000;
+    font-size: 5rem;
+    font-weight: 700;
+    text-align: left;
+    margin: 10px 0 60px 0px;
+    letter-spacing: -0.02em;
+    text-transform: uppercase;
+    font-family: 'Quicksand', sans-serif;
+    line-height: 1;
+}
+
+/* 文字起こしテキストボックスのスタイル */
+.transcript-box {
+    min-height: 200px;
+    padding: 20px;
+    font-size: 1.2rem;
+    line-height: 1.8;
+    margin-bottom: 60px;
+    white-space: pre-wrap;
+    border: none;
+    background: #fff;
+}
+
+/* 文字起こしの各行のスタイル */
+.transcript-line {
+    margin-bottom: 8px;
+}
+
+/* 新しい文字起こし行のアニメーション */
+.transcript-line.new {
+    animation: fadeIn 0.5s ease forwards;
+    opacity: 0;
+    transform: translateY(10px);
+}
+
+/* フェードインアニメーション */
+@keyframes fadeIn {
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* ボタングループのスタイル */
+.button-group {
+    display: flex;
+    gap: 24px;
+    margin-bottom: 48px;
+    padding-left: 50px;
+    position: relative;
+}
+
+/* フローティングアクションボタンのスタイル */
+.fab-button {
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    border: none;
+    background: #000000;
+    color: white;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* ボタンホバー時のエフェクト */
+.fab-button:hover {
+    transform: scale(1.1);
+}
+
+/* 録音中のボタンスタイル */
+.fab-button.recording {
+    background: #ff0000;
+    box-shadow: 0 0 20px rgba(255, 0, 0, 0.3);
+}
+
+/* ヘルプパネルのスタイル */
+.help-panel {
+    position: fixed;
+    top: 0;
+    right: -400px;
+    width: 400px;
+    height: 100vh;
+    background: #fafafa;
+    padding: 40px;
+    box-sizing: border-box;
+    transition: right 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: -2px 0 20px rgba(0, 0, 0, 0.1);
+    z-index: 1000;
+}
+
+/* 表示中のヘルプパネル */
+.help-panel.visible {
+    right: 0;
+}
+
+/* ヘルプパネルの見出し */
+.help-panel h3 {
+    font-size: 1.4rem;
+    margin-bottom: 30px;
+}
+
+/* ヘルプパネルのリスト */
+.help-panel ul {
+    padding-left: 20px;
+}
+
+/* ヘルプパネルのリストアイテム */
+.help-panel li {
+    margin-bottom: 15px;
+    font-size: 1rem;
+}
+
+/* マテリアルアイコンのサイズ */
+.material-icons {
+    font-size: 24px;
+}
+
+/* 作者情報のスタイル */
+.author {
+    position: absolute;
+    bottom: 20px;
+    left: 40px;
+    font-size: 0.9rem;
+    color: #666;
+}
+
+.rotate-smile {
+    display: inline-block;
+    transition: transform 0.3s ease;
+}
+
+.rotate-smile:hover {
+    transform: rotate(90deg);
+}
+
+.flip-text {
+    display: inline-block;
+    position: relative;
+    cursor: pointer;
+    transform-style: preserve-3d;
+    transition: transform 0.6s;
+}
+
+.flip-text::after {
+    content: attr(data-emoji);
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    backface-visibility: hidden;
+    transform: rotateX(180deg);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.8em; 
+}
+
+.flip-text span {
+    display: inline-block;
+    backface-visibility: hidden;
+}
+
+.flip-text.flipped {
+    transform: rotateX(180deg);
+}

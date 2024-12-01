@@ -1,0 +1,36 @@
+{
+  "name": "ibm-work",
+  "version": "1.0.0",
+  "main": "server.js",
+  "scripts": {
+    "test": "node server_test.js",
+    "start": "node server.js",
+    "build": "pkg ."
+  },
+  "dependencies": {
+    "@aws-sdk/client-transcribe-streaming": "^3.687.0",
+    "aws-sdk": "^2.1664.0",
+    "express": "^4.21.1",
+    "socket.io": "^4.8.1"
+  },
+  "pkg": {
+    "assets": [
+      "index.html",
+      "style.css"
+    ],
+    "targets": [
+      "node16-macos-arm64",
+      "node16-win-x64"
+    ]
+  },
+  "bin": {
+    "ibm-work": "server.js"
+  },
+  "devDependencies": {
+    "pkg": "^5.8.1"
+  },
+  "description": "ibm work",
+  "keywords": [],
+  "author": "",
+  "license": "ISC"
+}

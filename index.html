@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <!-- 基本的メタ情報 -->
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>:)</title>
+    <!-- 必要なライブラリとフォントの読み込み -->
+    <script src="/socket.io/socket.io.js"></script>
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <!-- メインページコンテナ -->
+    <div class="page-container">
+        <div class="container">
+            <h1 class="title">
+                <span class="flip-text" data-emoji="💬"><span>Speech</span></span>
+                to 
+                <span class="flip-text" data-emoji="📃"><span>Text</span></span>
+                <span class="rotate-smile">:)</span>
+            </h1>
+
+            <!-- 文字起こしテキストを表示するエリア -->
+            <div id="transcript" class="transcript-box"></div>
+
+            <!-- コントロールボタン -->
+            <div class="button-group">
+                <button id="micButton" class="fab-button">
+                    <span class="material-icons">mic</span>
+                </button>
+                <button id="resetButton" class="fab-button">
+                    <span class="material-icons">refresh</span>
+                </button>
+                <button id="helpButton" class="fab-button">
+                    <span class="material-icons">help_outline</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ヘルプパネル -->
+    <div class="help-panel">
+        <h3>Instructions</h3>
+        <ul>
+            <li>Click microphone button to start recording</li>
+            <li>Click again to stop recording</li>
+            <li>Use reset button to clear text</li>
+            <li>Make sure to allow microphone access</li>
+        </ul>
+        <div class="author">Created by HuangHaiya for IBM :)</div>
+    </div>
+
+    <script>
+        class SpeechRecognitionManager {
+            constructor() {
+                // WebSocketの初期化
+                this._ws = io();
+                this._audioCtx = null;
+                this._audioSrc = null;
+                this._audioProcessor = null;
+                this._isActive = false;
+                this._lastUtteranceTime = Date.now();
+
+                // DOM要素の初期化
+                this._elements = {
+                    mic: document.getElementById('micButton'),
+                    reset: document.getElementById('resetButton'),
+                    help: document.getElementById('helpButton'),
+                    output: document.getElementById('transcript'),
+                    helpPanel: document.querySelector('.help-panel')
+                };
+
+                // 文字起こしの状態
+                this._state = {
+                    currentText: '',
+                    completedLines: [],
+                    helpPanelTimer: null
+                };
+
+                this._initEventListeners();
+                this._initSocketHandlers();
+            }
+
+            _initEventListeners() {
+                // マイクボタンのイベント
+                this._elements.mic.addEventListener('click', () => this._toggleRecording());
+                
+                // リセットボタンのイベント
+                this._elements.reset.addEventListener('click', () => this._resetTranscript());
+
+                // ヘルプパネルの表示制御
+                const handleHelpPanel = (isEnter) => {
+                    clearTimeout(this._state.helpPanelTimer);
+                    if (isEnter) {
+                        this._elements.helpPanel.classList.add('visible');
+                    } else {
+                        this._state.helpPanelTimer = setTimeout(() => {
+                            this._elements.helpPanel.classList.remove('visible');
+                        }, 300);
+                    }
+                };
+
+                this._elements.help.addEventListener('mouseenter', () => handleHelpPanel(true));
+                this._elements.help.addEventListener('mouseleave', () => handleHelpPanel(false));
+                this._elements.helpPanel.addEventListener('mouseenter', () => handleHelpPanel(true));
+                this._elements.helpPanel.addEventListener('mouseleave', () => handleHelpPanel(false));
+                
+                document.querySelectorAll('.flip-text').forEach(element => {
+                    element.addEventListener('click', function() {
+                    this.classList.toggle('flipped');
+                });
+    });
+            }
+
+            _initSocketHandlers() {
+                // 文字起こし結果の受信
+                this._ws.on('transcription', data => {
+                    const now = Date.now();
+                    const silenceDuration = now - this._lastUtteranceTime;
+                    
+                    if (data.isFinal) {
+                        if (silenceDuration > 800 && this._state.completedLines.length) {
+                            this._state.completedLines.push('');
+                        }
+                        this._state.completedLines.push(data.text);
+                        this._state.currentText = '';
+                        this._lastUtteranceTime = now;
+                    } else {
+                        this._state.currentText = data.text;
+                    }
+                    this._renderTranscript();
+                });
+
+                // エラーハンドリング
+                this._ws.on('error', err => {
+                    console.error('サーバーエラー:', err);
+                    this._state.completedLines.push(`エラー: ${err}`);
+                    this._renderTranscript();
+                });
+            }
+
+            async _startRecording() {
+                try {
+                    // マイクの使用許可を取得
+                    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                    
+                    // オーディオコンテキストの設定
+                    this._audioCtx = new AudioContext();
+                    this._audioSrc = this._audioCtx.createMediaStreamSource(stream);
+                    this._audioProcessor = this._audioCtx.createScriptProcessor(1024, 1, 1);
+                    
+                    // オーディオ処理パイプラインの構築
+                    this._audioSrc.connect(this._audioProcessor);
+                    this._audioProcessor.connect(this._audioCtx.destination);
+
+                    // オーディオデータの処理
+                    this._audioProcessor.onaudioprocess = e => {
+                        const rawData = e.inputBuffer.getChannelData(0);
+                        const processedData = new Int16Array(rawData.length);
+                        
+                        // 音声データの変換処理
+                        for (let i = 0; i < rawData.length; i++) {
+                            processedData[i] = Math.max(-32768, Math.min(32767, Math.floor(rawData[i] * 32768)));
+                        }
+                        
+                        this._ws.emit('audioData', processedData.buffer);
+                    };
+
+                    // 録音開始
+                    this._ws.emit('startTranscription');
+                    this._isActive = true;
+                    this._elements.mic.classList.add('recording');
+                    
+                    console.log('録音を開始しました');
+                } catch (err) {
+                    console.error('マイクの接続エラー:', err);
+                    this._elements.output.textContent = `エラー: ${err.message}`;
+                }
+            }
+
+            _stopRecording() {
+                if (this._audioCtx?.state !== 'closed') {
+                    this._audioSrc?.disconnect();
+                    this._audioProcessor?.disconnect();
+                    this._audioCtx?.close();
+                    this._ws.emit('stopTranscription');
+                    this._isActive = false;
+                    this._elements.mic.classList.remove('recording');
+                    console.log('録音を停止しました');
+                }
+            }
+
+            _toggleRecording() {
+                this._isActive ? this._stopRecording() : this._startRecording();
+            }
+
+            _resetTranscript() {
+                this._state.currentText = '';
+                this._state.completedLines = [];
+                this._elements.output.innerHTML = '';
+                this._lastUtteranceTime = Date.now();
+                console.log('文字起こしをリセットしました');
+            }
+
+            _renderTranscript() {
+                const lines = [
+                    ...this._state.completedLines.map(line => `<div class="transcript-line">${line}</div>`),
+                    this._state.currentText ? `<div class="transcript-line new">${this._state.currentText}</div>` : ''
+                ];
+                this._elements.output.innerHTML = lines.join('');
+            }
+        }
+
+        // アプリケーションの初期化
+        new SpeechRecognitionManager();
+    </script>
+</body>
+</html>
