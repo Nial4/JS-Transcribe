@@ -23,7 +23,7 @@
 ## 実行準備
 
 1. AWS の認証情報を設定してください
-2. 環境変数の設定(確認用の key を残りましたが、確認後削除してください):
+2. 環境変数の設定:
    - `AWS_ACCESS_KEY_ID`
    - `AWS_SECRET_ACCESS_KEY`
    - `AWS_REGION`
